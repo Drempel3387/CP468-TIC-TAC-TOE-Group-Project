@@ -3,6 +3,8 @@
 import os
 import sys
 import unittest
+from algorithms.minimax import minimax_search
+from agents.minimax_agent import MinimaxAgent
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -50,6 +52,59 @@ def minimax(state, player, is_max, counter):
     vals = [minimax(state.apply_move(m), player, not is_max, counter)
             for m in state.get_legal_moves()]
     return max(vals) if is_max else min(vals)
+
+
+class TestMinimax(unittest.TestCase):
+
+    def test_empty_board(self):
+        # Perfect Tic-Tac-Toe should end in a draw.
+        move, score, stats = minimax_search(TTT(), "X")
+
+        self.assertEqual(score, 0)
+        self.assertIn(move, range(9))
+        self.assertGreater(stats.nodes_evaluated, 0)
+
+    def test_winning_move(self):
+        # X X _
+        # O O _
+        # _ _ _
+        # X should play position 2 to win.
+
+        board = (
+            "X", "X", None,
+            "O", "O", None,
+            None, None, None
+        )
+
+        move, score, stats = minimax_search(TTT(board), "X")
+
+        self.assertEqual(move, 2)
+        self.assertEqual(score, 1)
+
+    def test_blocking_move(self):
+        # X _ _
+        # O O _
+        # _ _ X
+        # X should block O at position 5.
+
+        board = (
+            "X", None, None,
+            "O", "O", None,
+            None, None, "X"
+        )
+
+        move, score, stats = minimax_search(TTT(board), "X")
+
+        self.assertEqual(move, 5)
+
+    def test_agent(self):
+        # Check that the agent returns a legal move.
+        state = TTT()
+        agent = MinimaxAgent()
+
+        move = agent.choose_move(state)
+
+        self.assertIn(move, state.get_legal_moves())
 
 
 class TestAlphaBeta(unittest.TestCase):
