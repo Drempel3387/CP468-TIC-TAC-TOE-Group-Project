@@ -1,3 +1,8 @@
+# *CP468 – Multi-Agent Decision Making in Games | Final report | Standard 3×3 Tic-Tac-Toe*
+*Group 1 - Adom, Michelle; Couto, Marie; Glennie, Robert; Mongeon, Ethan; Rempel, Devon* 
+
+
+
 ### Minimax
 
 #### Overview
