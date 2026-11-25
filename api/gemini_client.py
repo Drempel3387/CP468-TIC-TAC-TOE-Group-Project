@@ -6,10 +6,11 @@ import urllib.request
 
 
 class GeminiClient:
-    def __init__(self, api_key=None, model=None, timeout=20):
+    def __init__(self, api_key=None, model=None, timeout=20, thinking_level=None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         self.timeout = timeout
+        self.thinking_level = thinking_level  # e.g. "minimal"/"low" for Gemini 3 models
 
     @property
     def is_configured(self):
@@ -23,6 +24,8 @@ class GeminiClient:
         payload = {"contents": [{"parts": [{"text": prompt}]}],
                    "generationConfig": {"temperature": 0.1,
                                         "responseMimeType": "application/json"}}
+        if self.thinking_level:
+            payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": self.thinking_level}
         request = urllib.request.Request(
             endpoint, data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json"}, method="POST")
