@@ -5,7 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")  # save to files, no window needed
+matplotlib.use("Agg")  
 import matplotlib.pyplot as plt
 
 from evaluation.metrics import read_rows, summarize
@@ -27,7 +27,6 @@ def _save(fig, name):
 
 
 def plot_win_draw_loss(summary, stochastic, filename):
-    # Skip Random's own rows: they are just the mirror image of the other agent's.
     rows = sorted((s for s in summary
                    if s["stochastic"] == int(stochastic) and s["agent"] != "Random"),
                   key=lambda s: (s["agent"], s["opponent"]))

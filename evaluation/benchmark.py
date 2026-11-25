@@ -16,7 +16,6 @@ from game.board import Board
 ROOT = Path(__file__).resolve().parents[1]
 OUT_CSV = ROOT / "results" / "data" / "games.csv"
 
-# label -> function that builds a fresh agent
 AGENTS = {
     "Random": RandomAgent,
     "Minimax": MinimaxAgent,
@@ -24,7 +23,6 @@ AGENTS = {
     "Expectiminimax": ExpectiminimaxAgent,
 }
 
-# (agent A, agent B). Each pair plays half its games with A as X, half as O.
 STANDARD_MATCHUPS = [
     ("Minimax", "Random"),
     ("Alpha-Beta", "Random"),
