@@ -19,7 +19,6 @@ ALGOS = ("Minimax", "Alpha-Beta")
 
 
 def minimax_depth_limited(state, player, max_depth, heuristic):
-    """Plain Minimax (no pruning) that stops at max_depth and uses a heuristic."""
     stats = SearchStats()
     stats.start()
 
@@ -37,7 +36,7 @@ def minimax_depth_limited(state, player, max_depth, heuristic):
             best = max(best, v) if is_max else min(best, v)
         return best
 
-    stats.nodes_evaluated += 1  # the root, counted the same way as alphabeta_search
+    stats.nodes_evaluated += 1  
     best_move, best_value = None, float("-inf")
     for move in state.get_legal_moves():
         v = value(state.apply_move(move), 1, False)
@@ -69,7 +68,6 @@ def run(sizes, max_depth, time_limit):
             for algo in ALGOS:
                 prev = None
                 for depth in range(1, cap + 1):
-                    # Predict the next search's time from the last one's growth.
                     if prev is not None:
                         ratio = prev["nodes"] / max(prev_prev_nodes, 1) if prev_prev_nodes else size * size
                         if prev["time_s"] * max(ratio, 1) > time_limit:
@@ -138,7 +136,6 @@ def plot(rows, compare_depth=3):
         plt.close(fig)
         print(f"saved {FIG_DIR / fname}")
 
-    # Fixed-depth comparison across board sizes.
     pick = {(r["board_size"], r["algorithm"]): r["nodes"]
             for r in rows if r["depth"] == compare_depth}
     if pick:
