@@ -5,7 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")  # save to files, no window needed
+matplotlib.use("Agg")  
 import matplotlib.pyplot as plt
 
 from evaluation.metrics import read_rows, summarize
@@ -27,7 +27,6 @@ def _save(fig, name):
 
 
 def plot_win_draw_loss(summary, stochastic, filename):
-    # Skip Random's own rows: they are just the mirror image of the other agent's.
     rows = sorted((s for s in summary
                    if s["stochastic"] == int(stochastic) and s["agent"] != "Random"),
                   key=lambda s: (s["agent"], s["opponent"]))
@@ -78,30 +77,6 @@ def plot_per_move(rows, field, ylabel, title, filename, scale=1.0, log=False):
     _save(fig, filename)
 
 
-def plot_scalability():
-    import csv
-    path = ROOT / "results" / "data" / "scalability_cost.csv"
-    if not path.exists():
-        return
-    rows = list(csv.DictReader(open(path)))
-    fig, ax = plt.subplots(figsize=(8, 4.4))
-    colors = {"3": "#4caf50", "4": "#1d4e89", "5": "#b3541e"}
-    for size in ("3", "4", "5"):
-        rs = [r for r in rows if r["board_size"] == size]
-        d = [int(r["depth"]) for r in rs]
-        ab = [int(r["alphabeta_nodes"]) for r in rs]
-        mm = [(int(r["depth"]), int(r["minimax_nodes"])) for r in rs if r["minimax_nodes"]]
-        ax.plot(d, ab, "-o", color=colors[size], label=f"Alpha-Beta {size}x{size}")
-        ax.plot(*zip(*mm), "--s", color=colors[size], alpha=.55, label=f"Minimax {size}x{size}")
-    ax.set_yscale("log")
-    ax.set_xlabel("Search depth (plies, from the empty board)")
-    ax.set_ylabel("Nodes evaluated (log scale)")
-    ax.set_title("Search cost vs depth and board size")
-    ax.grid(True, which="both", alpha=.25)
-    ax.legend(fontsize=8, ncol=2)
-    _save(fig, "scalability_nodes.png")
-
-
 def plot_gemini():
     """Gemini win/draw/loss per opponent for each thinking level (gemini_games_<level>.csv)."""
     import csv
@@ -140,7 +115,6 @@ def main():
     plot_per_move(rows, "time_s", "Average time per move (ms, log scale)",
                   "Thinking time per move", "time_per_move.png",
                   scale=1000.0, log=True)
-    plot_scalability()
     plot_gemini()
 
 

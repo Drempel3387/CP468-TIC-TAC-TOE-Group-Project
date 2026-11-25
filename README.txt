@@ -31,7 +31,7 @@ Tests:
 Benchmarks (results are written to results/data, run from the project root):
     python3 -m evaluation.benchmark                 # standard + stochastic 3x3 games
     python3 -m evaluation.benchmark --probe         # time one move per algorithm
-    python3 -m evaluation.scalability               # 3x3 / 4x4 / 5x5 cost and play
+    python3 -m evaluation.scalability               # 3x3 / 4x4 / 5x5 cost vs depth (also --plot-only)
     python3 -m evaluation.gemini_benchmark --thinking low      # needs GEMINI_API_KEY
     python3 -m evaluation.gemini_benchmark --thinking minimal --out results/data/gemini_games_minimal.csv
     python3 -m evaluation.plots                     # redraw figures in results/figures
@@ -89,7 +89,7 @@ evaluation/                   Testing and performance comparison
   benchmark.py                Runs matches across algorithms and board sizes
   metrics.py                  Execution time, node evaluations, win rates
   plots.py                    Charts and tables for the report and poster
-  scalability.py              Search cost and play strength on 3x3, 4x4, 5x5 boards
+  scalability.py              Search cost vs board size and depth (3x3, 4x4, 5x5)
   gemini_benchmark.py         Plays Gemini against the search agents (needs API key)
 
 tests/                        Unit tests

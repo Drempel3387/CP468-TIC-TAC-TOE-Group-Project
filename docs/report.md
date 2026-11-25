@@ -56,7 +56,7 @@ The project is split into layers that depend only on the layer below, so every a
 
 #### Heuristic evaluation
 
-For depth-limited search, `line_heuristic(state, player)` scores non-terminal positions. Every winning line that is still open for only one side is worth `10^(marks − 1)` points for that side (so two-in-a-row outweighs two separate single marks); the net score is squashed to `net / (|net| + 100)`, which stays strictly between −1 and +1. The heuristic therefore can never outrank a real win (+1) or a real loss (−1), and exact terminal results always dominate estimates.
+For depth-limited search, `line_heuristic(state, player)` scores non-terminal positions. Every winning line that is still open for only one side contributes `(marks / k)²` to that side's score, where `k` is the winning line length, so lines that are nearly complete count much more than lines with a single mark. The sum is divided by the number of lines, which keeps the score strictly between −1 and +1, so an estimate can never outrank a real win (+1) or a real loss (−1).
 
 #### Stochastic variant
 
@@ -404,45 +404,44 @@ Average Gemini time per game was **20.1 s at `low`** versus **2.8 s at `minimal`
 
 ## Scalability Analysis
 
-The scalability study (`evaluation/scalability.py`) uses 3×3, 4×4 and 5×5 boards where the winning line length equals the board size. Beyond 3×3, full-depth search is not feasible for Minimax, so searches are depth-limited and leaves are scored with `line_heuristic`.
+The scalability study (`evaluation/scalability.py`) measures how search cost grows with board size (3×3, 4×4, 5×5; winning line length equals the board size) and search depth. From the empty board, depth-limited Minimax and Alpha-Beta are run to increasing depths, and the nodes evaluated and execution time are recorded in `results/data/scalability.csv`. Leaves at the depth limit are scored with `line_heuristic`. A time limit stops a series once a search becomes too slow, so Minimax stops at depth 5 on 4×4 and depth 4 on 5×5.
 
 #### Search cost vs board size and depth
 
-Nodes evaluated from the empty board (Minimax without pruning vs Alpha-Beta):
+Nodes evaluated from the empty board (same depth for both algorithms):
 
 | Board | Depth | Minimax nodes | Alpha-Beta nodes | Reduction | Minimax time (s) | Alpha-Beta time (s) |
 |---|---:|---:|---:|---:|---:|---:|
-| 3×3 | 5 | 18,730 | 2,805 | 85.0% | 0.178 | 0.028 |
-| 3×3 | 9 (full) | 549,946 | 18,297 | 96.7% | 4.886 | 0.176 |
-| 4×4 | 3 | 3,617 | 313 | 91.3% | 0.037 | 0.003 |
-| 4×4 | 5 | 571,457 | 18,674 | 96.7% | 6.953 | 0.245 |
-| 5×5 | 3 | 14,426 | 1,470 | 89.8% | 0.177 | 0.019 |
-| 5×5 | 4 | 318,026 | 9,058 | 97.2% | 4.278 | 0.124 |
-| 5×5 | 5 | 6,693,626 | 92,966 | 98.6% | 96.790 | 1.451 |
+| 3×3 | 3 | 586 | 170 | 71.0% | 0.004 | 0.001 |
+| 3×3 | 5 | 18,730 | 2,740 | 85.4% | 0.165 | 0.030 |
+| 3×3 | 9 (full) | 549,946 | 18,297 | 96.7% | 5.289 | 0.190 |
+| 4×4 | 3 | 3,617 | 313 | 91.3% | 0.030 | 0.003 |
+| 4×4 | 5 | 571,457 | 9,968 | 98.3% | 5.446 | 0.119 |
+| 5×5 | 3 | 14,426 | 1,570 | 89.1% | 0.137 | 0.015 |
+| 5×5 | 4 | 318,026 | 7,578 | 97.6% | 3.094 | 0.085 |
 
-Minimax grows roughly by the branching factor each ply (×about 20 per extra ply on 5×5), so a 5-ply search of 5×5 already needs 6.7 million nodes and 97 seconds. Alpha-Beta needs about 70× fewer nodes there, and its advantage grows with both depth and board size (85% fewer nodes at depth 5 on 3×3, 98.6% fewer at depth 5 on 5×5). Full-depth Minimax is impractical beyond 3×3: the 4×4 game has up to 16! ≈ 2×10¹³ move orders.
+Minimax grows by roughly the number of open squares for each extra ply: 5×5 goes from 14,426 nodes at depth 3 to 318,026 at depth 4 (about 22×). At equal depth, Alpha-Beta needs 71–98% fewer nodes, and its advantage grows with depth and board size. Because Minimax was stopped by the time limit, the deepest searches are Alpha-Beta only:
 
-![Scalability: nodes evaluated](../results/figures/scalability_nodes.png)
+| Board | Deepest Alpha-Beta depth reached | Nodes | Time (s) |
+|---|---:|---:|---:|
+| 3×3 | 9 (full game) | 18,297 | 0.19 |
+| 4×4 | 8 | 1,331,150 | 17.7 |
+| 5×5 | 7 | 4,840,377 | 66.3 |
 
-#### Playing strength on larger boards
+Searching a 4×4 or 5×5 game to the end is infeasible (there are up to 16! ≈ 2×10¹³ move orders on 4×4), so on larger boards the search is depth-limited and relies on the heuristic.
 
-Depth-3 Alpha-Beta with the line heuristic, 20 games per pairing:
+![Search nodes vs depth](../results/figures/scalability_nodes_vs_depth.png)
 
-| Board | Opponent | Wins | Draws | Losses | Avg. nodes / game | Avg. time / game (s) |
-|---|---|---:|---:|---:|---:|---:|
-| 4×4 | Random | 19 | 0 | 1 | 1,657 | 0.024 |
-| 4×4 | Alpha-Beta depth 1 | 0 | 20 | 0 | 2,588 | 0.040 |
-| 5×5 | Random | 15 | 5 | 0 | 7,916 | 0.144 |
-| 5×5 | Alpha-Beta depth 1 | 0 | 20 | 0 | 11,644 | 0.223 |
+![Search time vs depth](../results/figures/scalability_time_vs_depth.png)
 
-The depth-limited agent still beats Random in the large majority of games and plays each game in a fraction of a second. The 20 draws against a depth-1 searcher suggest that on these boards (winning line = board size) both sides can usually block each other.
+![Growth with board size at depth 3](../results/figures/scalability_by_board_size.png)
 
 #### Summary of scaling behaviour
 
 | Approach | Scaling |
 |---|---|
-| Minimax | Exponential in depth; ~550 k nodes at full depth on 3×3, millions at depth 5 on 5×5 |
-| Alpha-Beta | Same worst case, but in practice 85–99% fewer nodes; best savings at greater depth and larger boards |
+| Minimax | Exponential in depth; ~550 k nodes at full depth on 3×3, over 300 k nodes at depth 4 on 5×5 |
+| Alpha-Beta | Same worst case, but in practice 71–98% fewer nodes at equal depth, reaching three plies deeper than Minimax on 4×4 and 5×5 within the time limit |
 | Expectiminimax | Extra chance layer squares the branching factor, but memoization keeps 3×3 at ~4,000 nodes per game |
 | Gemini | Cost is network latency (seconds per move) independent of board size, but accuracy depends strongly on thinking level |
 
@@ -451,4 +450,4 @@ The depth-limited agent still beats Random in the large majority of games and pl
 - Minimax and Alpha-Beta both play 3×3 Tic-Tac-Toe perfectly (never lose, always draw each other); Alpha-Beta is about 30× cheaper at full depth and its advantage widens on larger boards.
 - Expectiminimax is the right tool when moves are uncertain: it outperforms deterministic search under the 10% slip rule (up to 16 wins to 2 losses against Alpha-Beta).
 - The Gemini agent can play well (no losses with `low` thinking against Random and Alpha-Beta) but is slow, costs an API call per move, can forfeit through illegal moves and never beat a perfect search agent.
-- Depth-limited search with a heuristic keeps the same algorithms usable on 4×4 and 5×5 boards, at the price of no longer guaranteeing optimal play.
+- Depth-limited search with a heuristic keeps the same algorithms usable on 4×4 and 5×5 boards, at the price of no longer guaranteeing optimal play. Alpha-Beta reached depth 8 on 4×4 and depth 7 on 5×5 within the time limit, where Minimax stopped at depths 5 and 4.

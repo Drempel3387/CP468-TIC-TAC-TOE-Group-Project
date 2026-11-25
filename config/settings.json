@@ -11,8 +11,9 @@
   "benchmark": {
     "standard_games_per_matchup": 100,
     "stochastic_games_per_matchup": 50,
-    "scalability_games_per_matchup": 20,
     "scalability_board_sizes": [3, 4, 5],
+    "scalability_max_depth": 9,
+    "scalability_time_limit_seconds": 60,
     "seed": 468
   },
   "output": {

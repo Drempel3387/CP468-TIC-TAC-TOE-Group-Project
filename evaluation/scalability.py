@@ -1,127 +1,182 @@
-"""Scalability study: how search cost grows with board size and search depth.
-
-Part 1 (cost):  from the empty board, depth-limited Minimax vs Alpha-Beta on 3x3, 4x4, 5x5.
-Part 2 (play):  depth-limited Alpha-Beta with a heuristic vs Random / a shallow searcher.
-
-Writes results/data/scalability_cost.csv and results/data/scalability_games.csv.
-"""
+"""Scalability test: how search cost grows with board size and search depth."""
 from __future__ import annotations
 
 import argparse
 import csv
-import random
 import time
 from pathlib import Path
 
-from agents.alphabeta_agent import AlphaBetaAgent
-from agents.random_agent import RandomAgent
 from algorithms.alphabeta import alphabeta_search
 from algorithms.heuristics import line_heuristic
 from algorithms.stats import SearchStats
-from evaluation.metrics import MeteredAgent
 from game.board import Board
-from game.tictactoe import play_game
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "results" / "data"
-
-MINIMAX_NODE_CAP = 8_000_000   # skip plain minimax runs expected to exceed this
-
-
-def minimax_limited(state, player, depth, max_depth, is_max, stats):
-    """Plain depth-limited Minimax (no pruning), same scoring as the Alpha-Beta search."""
-    stats.nodes_evaluated += 1
-    if state.is_terminal():
-        return state.utility(player)
-    if depth >= max_depth:
-        return line_heuristic(state, player)
-    best = float("-inf") if is_max else float("inf")
-    for move in state.get_legal_moves():
-        v = minimax_limited(state.apply_move(move), player, depth + 1, max_depth, not is_max, stats)
-        best = max(best, v) if is_max else min(best, v)
-    return best
+CSV_PATH = ROOT / "results" / "data" / "scalability.csv"
+FIG_DIR = ROOT / "results" / "figures"
+FIELDS = ["board_size", "algorithm", "depth", "nodes", "time_s", "best_move", "value"]
+ALGOS = ("Minimax", "Alpha-Beta")
 
 
-def plain_minimax_root(state, depth):
+def minimax_depth_limited(state, player, max_depth, heuristic):
     stats = SearchStats()
     stats.start()
-    stats.nodes_evaluated += 1
+
+    def value(s, depth, is_max):
+        stats.nodes_evaluated += 1
+        if s.is_terminal():
+            stats.terminal_evals += 1
+            return s.utility(player)
+        if depth >= max_depth:
+            stats.terminal_evals += 1
+            return heuristic(s, player)
+        best = float("-inf") if is_max else float("inf")
+        for move in s.get_legal_moves():
+            v = value(s.apply_move(move), depth + 1, not is_max)
+            best = max(best, v) if is_max else min(best, v)
+        return best
+
+    stats.nodes_evaluated += 1  
+    best_move, best_value = None, float("-inf")
     for move in state.get_legal_moves():
-        minimax_limited(state.apply_move(move), state.current_player, 1, depth, False, stats)
+        v = value(state.apply_move(move), 1, False)
+        if v > best_value:
+            best_move, best_value = move, v
     stats.stop()
-    return stats
+    return best_move, best_value, stats
 
 
-def cost_study(max_depth_by_size):
+def measure(algo, size, depth):
+    state = Board.empty(size)
+    player = state.current_player
+    if algo == "Alpha-Beta":
+        move, value, stats, _ = alphabeta_search(
+            state, player, max_depth=depth, heuristic=line_heuristic)
+    else:
+        move, value, stats = minimax_depth_limited(
+            state, player, depth, line_heuristic)
+    return {"board_size": size, "algorithm": algo, "depth": depth,
+            "nodes": stats.nodes_evaluated, "time_s": round(stats.elapsed, 6),
+            "best_move": move, "value": round(value, 4)}
+
+
+def run(sizes, max_depth, time_limit):
     rows = []
-    for size, depths in max_depth_by_size.items():
-        board = Board.empty(size)
-        branching = size * size
-        for d in depths:
-            # a depth-d search from the empty board has at most b*(b-1)*...*(b-d+1) leaves
-            est = 1
-            for i in range(d):
-                est *= branching - i
-            if est <= MINIMAX_NODE_CAP:
-                mm = plain_minimax_root(board, d)
-                mm_nodes, mm_time = mm.nodes_evaluated, mm.elapsed
-            else:
-                mm_nodes = mm_time = ""
-            _, _, ab, _ = alphabeta_search(board, "X", max_depth=d, heuristic=line_heuristic)
-            rows.append({"board_size": size, "depth": d, "minimax_nodes": mm_nodes,
-                         "minimax_time_s": round(mm_time, 4) if mm_time != "" else "",
-                         "alphabeta_nodes": ab.nodes_evaluated,
-                         "alphabeta_time_s": round(ab.elapsed, 4)})
-            print(f"  {size}x{size} depth {d}: minimax={mm_nodes or 'skipped'} "
-                  f"alpha-beta={ab.nodes_evaluated} ({ab.elapsed:.2f}s)", flush=True)
+    try:
+        for size in sizes:
+            cap = min(max_depth, size * size)
+            for algo in ALGOS:
+                prev = None
+                for depth in range(1, cap + 1):
+                    if prev is not None:
+                        ratio = prev["nodes"] / max(prev_prev_nodes, 1) if prev_prev_nodes else size * size
+                        if prev["time_s"] * max(ratio, 1) > time_limit:
+                            print(f"  {size}x{size} {algo}: stopping before depth {depth} "
+                                  f"(predicted > {time_limit:.0f}s)", flush=True)
+                            break
+                    row = measure(algo, size, depth)
+                    rows.append(row)
+                    print(f"  {size}x{size} {algo:<10} depth {depth}: "
+                          f"{row['nodes']:>12,} nodes  {row['time_s']:>9.3f}s", flush=True)
+                    prev_prev_nodes = prev["nodes"] if prev else None
+                    prev = row
+    except KeyboardInterrupt:
+        print("\nStopped early; saving what was measured so far.")
     return rows
 
 
-def play_study(games, rng):
-    """Depth-limited Alpha-Beta (heuristic) against Random and against a depth-1 searcher."""
-    rows = []
-    for size, depth in ((4, 3), (5, 3)):
-        for opp_label, make_opp in (("Random", RandomAgent),
-                                    ("Alpha-Beta d=1", lambda: AlphaBetaAgent(1, line_heuristic))):
-            label = f"Alpha-Beta d={depth}"
-            print(f"  {size}x{size}: {label} vs {opp_label}", flush=True)
-            for i in range(games):
-                a = MeteredAgent(AlphaBetaAgent(depth, line_heuristic), label)
-                b = MeteredAgent(make_opp(), opp_label)
-                a_is_x = i % 2 == 0
-                x, o = (a, b) if a_is_x else (b, a)
-                res = play_game(x, o, size=size, rng=rng)
-                seat = "X" if a_is_x else "O"
-                outcome = "draw" if res.winner is None else ("win" if res.winner == seat else "loss")
-                rows.append({"board_size": size, "agent": label, "opponent": opp_label,
-                             "seat": seat, "result": outcome, "moves": a.moves,
-                             "nodes": a.nodes, "time_s": round(a.time_s, 4)})
-    return rows
-
-
-def write(rows, name):
-    DATA.mkdir(parents=True, exist_ok=True)
-    path = DATA / name
-    with open(path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0]))
+def write_csv(rows):
+    CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CSV_PATH, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
         w.writeheader()
         w.writerows(rows)
-    print(f"saved {path}")
+    print(f"\nSaved {len(rows)} rows to {CSV_PATH}")
+
+
+def read_csv():
+    with open(CSV_PATH, newline="") as f:
+        rows = list(csv.DictReader(f))
+    for r in rows:
+        r["board_size"], r["depth"], r["nodes"] = int(r["board_size"]), int(r["depth"]), int(r["nodes"])
+        r["time_s"] = float(r["time_s"])
+    return rows
+
+
+def plot(rows, compare_depth=3):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
+    colors = {3: "#1e88e5", 4: "#fb8c00", 5: "#8e24aa"}
+    styles = {"Minimax": ("-", "o"), "Alpha-Beta": ("--", "s")}
+    sizes = sorted({r["board_size"] for r in rows})
+
+    for field, ylabel, fname, scale in (
+            ("nodes", "Nodes evaluated (log scale)", "scalability_nodes_vs_depth.png", 1),
+            ("time_s", "Search time in ms (log scale)", "scalability_time_vs_depth.png", 1000)):
+        fig, ax = plt.subplots(figsize=(8, 5.5))
+        for size in sizes:
+            for algo in ALGOS:
+                pts = sorted((r["depth"], max(r[field] * scale, 1e-3))
+                             for r in rows if r["board_size"] == size and r["algorithm"] == algo)
+                if pts:
+                    ls, mk = styles[algo]
+                    ax.plot(*zip(*pts), ls, marker=mk, color=colors.get(size),
+                            label=f"{size}x{size} {algo}")
+        ax.set_yscale("log")
+        ax.set_xlabel("Search depth (moves looked ahead)")
+        ax.set_ylabel(ylabel)
+        ax.set_title("Search cost vs depth (first move, empty board)")
+        ax.legend(fontsize=8, ncol=2)
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(FIG_DIR / fname, dpi=200)
+        plt.close(fig)
+        print(f"saved {FIG_DIR / fname}")
+
+    pick = {(r["board_size"], r["algorithm"]): r["nodes"]
+            for r in rows if r["depth"] == compare_depth}
+    if pick:
+        fig, ax = plt.subplots(figsize=(7, 5))
+        width = 0.38
+        xs = range(len(sizes))
+        for j, algo in enumerate(ALGOS):
+            vals = [pick.get((s, algo), 0) for s in sizes]
+            bars = ax.bar([x + (j - 0.5) * width for x in xs], vals, width, label=algo)
+            for b, v in zip(bars, vals):
+                if v:
+                    ax.text(b.get_x() + b.get_width() / 2, v, f"{v:,}",
+                            ha="center", va="bottom", fontsize=8)
+        ax.set_xticks(list(xs))
+        ax.set_xticklabels([f"{s}x{s}" for s in sizes])
+        ax.set_yscale("log")
+        ax.set_ylabel("Nodes evaluated (log scale)")
+        ax.set_title(f"Growth with board size at depth {compare_depth}")
+        ax.legend()
+        fig.tight_layout()
+        fig.savefig(FIG_DIR / "scalability_by_board_size.png", dpi=200)
+        plt.close(fig)
+        print(f"saved {FIG_DIR / 'scalability_by_board_size.png'}")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--games", type=int, default=20)
-    parser.add_argument("--seed", type=int, default=468)
+    parser.add_argument("--sizes", type=int, nargs="+", default=[3, 4, 5])
+    parser.add_argument("--max-depth", type=int, default=9)
+    parser.add_argument("--time-limit", type=float, default=60.0,
+                        help="skip a search if it is predicted to take longer than this (seconds)")
+    parser.add_argument("--compare-depth", type=int, default=3)
+    parser.add_argument("--plot-only", action="store_true")
     args = parser.parse_args()
-    random.seed(args.seed)
-    rng = random.Random(args.seed)
 
-    print("== Cost from the empty board ==")
-    write(cost_study({3: [1, 2, 3, 4, 5, 6, 7, 8, 9], 4: [1, 2, 3, 4, 5], 5: [1, 2, 3, 4, 5]}),
-          "scalability_cost.csv")
-    print("== Play strength ==")
-    write(play_study(args.games, rng), "scalability_games.csv")
+    if not args.plot_only:
+        rows = run(args.sizes, args.max_depth, args.time_limit)
+        write_csv(rows)
+    else:
+        rows = read_csv()
+    plot(rows, args.compare_depth)
 
 
 if __name__ == "__main__":

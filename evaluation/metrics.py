@@ -27,7 +27,6 @@ class MeteredAgent:
         move = self.agent.choose_move(state)
         self.time_s += time.perf_counter() - start
         self.moves += 1
-        # Search agents expose last_stats (a SearchStats). Random/human don't.
         stats = getattr(self.agent, "last_stats", None)
         if stats is not None:
             self.nodes += stats.nodes_evaluated
