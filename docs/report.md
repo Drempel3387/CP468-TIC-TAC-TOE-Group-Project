@@ -458,4 +458,3 @@ For the stochastic games we only ran 50 games per matchup, while for Gemini we o
 
 
 
-For the stochastic games, Expectiminimax performed better against Minimax and Alpha-Beta in terms of wins compared to losses, which suggests that considering the chance of a move going somewhere else can be useful. However, we also saw that it could still lose games because of these random outcomes, even when playing against the Random agent.
