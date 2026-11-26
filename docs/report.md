@@ -128,7 +128,7 @@ MINIMAX_SEARCH(state, player):
 
 The conventional worst-case time complexity of Minimax is **O(n^m)**, where **n** is the branching factor (available moves) and **m** is the maximum search depth. Standard 3×3 Tic-Tac-Toe has at most nine moves from an empty board, with fewer available after each turn. Our implementation explores all legal continuations without pruning, so early-game searches are more expensive than late-game searches.
 
-The recursion uses **O(n)** active stack frames for a fixed-size board. Because `apply_move()` also creates a new board state at each recursive step, memory use depends on the size of each state.
+The recursion uses **O(m)** active stack frames for a fixed-size board. Because `apply_move()` also creates a new board state at each recursive step, memory use depends on the size of each state.
 
 #### Correctness Testing
 
