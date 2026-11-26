@@ -5,7 +5,7 @@
 | **Course** | CP468 – Artificial Intelligence |
 | **Project** | Multi-Agent Decision Making in Games |
 | **Group** | Group 1 |
-| **Members** | Adom, Michelle (ID: ________) · Couto, Marie (ID: 169078846) · Glennie, Robert (ID: ________) · Mongeon, Ethan (ID: ________) · Rempel, Devon (ID: ________) |
+| **Members** | Adom, Michelle (ID: 159054298) · Couto, Marie (ID: 169078846) · Glennie, Robert (ID: ________) · Mongeon, Ethan (ID: ________) · Rempel, Devon (ID: ________) |
 | **Date** | November 25, 2026 |
 
 ## Contents
