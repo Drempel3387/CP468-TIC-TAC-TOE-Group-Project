@@ -80,8 +80,8 @@ def main():
         probe()
         return
 
-    random.seed(args.seed)          # RandomAgent uses the global generator
-    rng = random.Random(args.seed)  # used for the 90/10 chance in stochastic games
+    random.seed(args.seed)          
+    rng = random.Random(args.seed)  
 
     rows = []
     if not args.skip_standard:
