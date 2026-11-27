@@ -77,6 +77,34 @@ def plot_per_move(rows, field, ylabel, title, filename, scale=1.0, log=False):
     _save(fig, filename)
 
 
+def plot_gemini():
+    """Gemini win/draw/loss per opponent for each thinking level (gemini_games_<level>.csv)."""
+    import csv
+    levels = [(lvl, ROOT / "results" / "data" / f"gemini_games_{lvl}.csv") for lvl in ("minimal", "low")]
+    levels = [(lvl, p) for lvl, p in levels if p.exists()]
+    if not levels:
+        return
+    groups = []
+    for lvl, path in levels:
+        rows = list(csv.DictReader(open(path)))
+        for opp in dict.fromkeys(r["opponent"] for r in rows):
+            rs = [r for r in rows if r["opponent"] == opp]
+            groups.append((f"thinking={lvl}\nvs {opp}\n(n={len(rs)})",
+                           {k: 100.0 * sum(r["result"] == k for r in rs) / len(rs)
+                            for k in ("win", "draw", "loss")}))
+    fig, ax = plt.subplots(figsize=(max(6, 2.2 * len(groups)), 5))
+    bottom = [0.0] * len(groups)
+    for key in ("win", "draw", "loss"):
+        vals = [g[1][key] for g in groups]
+        ax.bar([g[0] for g in groups], vals, bottom=bottom, label=key.capitalize(), color=COLORS[key])
+        bottom = [b + v for b, v in zip(bottom, vals)]
+    ax.set_ylabel("% of games (forfeits = losses)")
+    ax.set_ylim(0, 100)
+    ax.set_title("Gemini 3 Flash: win / draw / loss by thinking level")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.25), ncol=3)
+    _save(fig, "gemini_win_draw_loss.png")
+
+
 def main():
     rows = read_rows(CSV_PATH)
     summary = summarize(rows)
@@ -87,6 +115,7 @@ def main():
     plot_per_move(rows, "time_s", "Average time per move (ms, log scale)",
                   "Thinking time per move", "time_per_move.png",
                   scale=1000.0, log=True)
+    plot_gemini()
 
 
 if __name__ == "__main__":

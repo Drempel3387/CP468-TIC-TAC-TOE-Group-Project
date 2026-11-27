@@ -1,0 +1,33 @@
+{
+  "api": {
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+    "api_key_env": "GEMINI_API_KEY",
+    "model_env": "GEMINI_MODEL",
+    "default_model": "gemini-2.0-flash",
+    "benchmark_model": "gemini-3-flash-preview",
+    "timeout_seconds": 20,
+    "benchmark_timeout_seconds": 120
+  },
+  "generation": {
+    "temperature": 0.1,
+    "response_mime_type": "application/json"
+  },
+  "difficulty_levels": {
+    "minimal": {"thinking_level": "minimal", "description": "Fastest, least reasoning"},
+    "low": {"thinking_level": "low", "description": "Default benchmark level, stronger play"}
+  },
+  "retries": {
+    "max_attempts": 12,
+    "retry_on": ["HTTP 429", "HTTP 500", "HTTP 503", "network error"],
+    "forfeit_on": ["illegal move", "unparseable response"]
+  },
+  "benchmark": {
+    "games_per_matchup": 20,
+    "requests_per_minute": 5,
+    "seed": 468
+  },
+  "prompt": {
+    "format": "zero-shot, board as row-major list ('_' = empty), player mark, legal move indices",
+    "expected_reply": {"move": "<zero-based integer cell index>"}
+  }
+}

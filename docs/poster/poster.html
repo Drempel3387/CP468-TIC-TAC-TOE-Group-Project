@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="author" content="CP468 Group 1">
+<title>CP468 Poster – Multi-Agent Decision Making in Games</title>
+<style>
+  @page { size: 1800px 1500px; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; font-family: Helvetica, Arial, sans-serif; color: #1c2430; }
+  .poster { width: 1800px; height: 1500px; padding: 22px 36px 14px; display: flex; flex-direction: column; gap: 14px; }
+  header { background: #12304f; color: #fff; border-radius: 14px; padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin: 0; font-size: 42px; letter-spacing: -0.5px; }
+  header .sub { font-size: 22px; opacity: .85; margin-top: 6px; }
+  header .team { text-align: right; font-size: 19px; line-height: 1.5; opacity: .95; }
+  .cols { flex: 1; display: grid; grid-template-columns: 1fr 1.1fr 1.25fr; gap: 18px; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+  section { border: 2px solid #d5dde6; border-radius: 12px; padding: 10px 16px; background: #fafcfe; }
+  section.grow { flex: 1; min-height: 0; }
+  h2 { margin: 0 0 6px; font-size: 23px; color: #12304f; border-bottom: 3px solid #1d4e89; padding-bottom: 4px; }
+  p, li { font-size: 16px; line-height: 1.32; margin: 3px 0; }
+  ul { margin: 4px 0; padding-left: 22px; }
+  .tree { text-align: center; }
+  .tree img { display:block; margin:0 auto; }
+  .tree .cap { font-size: 14px; color: #4a5560; line-height: 1.3; }
+  .capwrap { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .mini { display: grid; grid-template-columns: repeat(3, 26px); grid-auto-rows: 26px; gap: 2px; background: #12304f; padding: 2px; border-radius: 4px; flex: none; }
+  .mini span { background: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; }
+  .mini .X { color: #1d4e89; } .mini .O { color: #b3541e; } .mini .e { color: #9aa5b1; font-weight: 400; font-size: 12px; background: #eef2f6; }
+  .tree h3 { margin: 4px 0 2px; font-size: 19px; }
+  .legend { display: flex; gap: 16px; justify-content: center; font-size: 14px; color: #4a5560; margin: 4px 0 0; flex-wrap: wrap; }
+  .max { color: #1d4e89; } .min { color: #b3541e; } .chance { color: #6a4c93; } .prune { color: #c0392b; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { padding: 2px 8px; border-bottom: 1px solid #dde3ea; text-align: right; }
+  th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+  th { background: #eaf0f7; }
+  td.hi { font-weight: 700; color: #1b7a43; }
+  .figs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .figs figure { margin: 0; text-align: center; }
+  .figs img { width: 100%; border: 1px solid #dde3ea; border-radius: 6px; background: #fff; }
+  .figs figcaption { font-size: 13px; color: #4a5560; margin-top: 2px; }
+  .big { display: flex; gap: 12px; margin: 4px 0; }
+  .stat { flex: 1; background: #12304f; color: #fff; border-radius: 10px; padding: 4px 8px; text-align: center; }
+  .stat b { display: block; font-size: 28px; line-height: 1.1; }
+  .stat span { font-size: 14px; opacity: .85; }
+  .note { font-size: 14px; color: #5a6672; }
+  footer { font-size: 13px; color: #5a6672; text-align: center; }
+  code { font-size: 15px; background: #eef2f6; padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+<header>
+  <div>
+    <h1>Multi-Agent Decision Making in Games</h1>
+    <div class="sub">Minimax, Alpha-Beta Pruning, Expectiminimax and a Gemini LLM agent playing Tic-Tac-Toe</div>
+  </div>
+  <div class="team">
+    <b>CP468 – Artificial Intelligence · Group 1</b><br>
+    Michelle Adom · Marie Couto · Robert Glennie · Ethan Mongeon · Devon Rempel
+  </div>
+</header>
+
+<div class="cols">
+
+<!-- ================= COLUMN 1 ================= -->
+<div class="col">
+  <section>
+    <h2>Project Overview</h2>
+    <p>Two-player, turn-based environment with <b>AI-vs-AI</b> and <b>Human-vs-AI</b> modes.</p>
+    <ul>
+      <li><b>Standard game:</b> 3×3 Tic-Tac-Toe, deterministic.</li>
+      <li><b>Stochastic variant:</b> the chosen square is used with p = 0.90; otherwise the mark lands on a random other empty square.</li>
+      <li><b>Agents:</b> Minimax, Alpha-Beta, Expectiminimax, Gemini, Random baseline.</li>
+      <li><b>Metrics:</b> nodes, time, win/draw/loss rate.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Algorithms</h2>
+    <p><b class="max">Minimax</b> – exhaustive recursion; MAX takes the highest value, MIN the lowest. Utility: win +1, draw 0, loss −1. Worst case O(n<sup>m</sup>).</p>
+    <p><b>Alpha-Beta</b> – same result as Minimax, but passes bounds α (best for MAX) and β (best for MIN) down the tree and skips a branch when α ≥ β. Best case about O(n<sup>m/2</sup>).</p>
+    <p><b class="chance">Expectiminimax</b> – adds <b>chance nodes</b> that average the child values by probability: &nbsp;E = Σ p<sub>i</sub> · V(s<sub>i</sub>). A state cache keeps the full 3×3 search practical.</p>
+  </section>
+
+  <section class="grow">
+    <h2>Scalability: 3×3 → 4×4 → 5×5</h2>
+    <img src="../../results/figures/scalability_nodes_vs_depth.png" style="width:100%;border:1px solid #dde3ea;border-radius:6px" alt="Search nodes vs depth">
+    <p>Depth-limited search from the empty board, scored by a line-counting heuristic. Alpha-Beta needs <b>71–98% fewer nodes</b> than Minimax at equal depth. On 5×5 at depth 4: <b>318k vs 7.6k nodes</b> (3.1 s vs 0.09 s).</p>
+    <table>
+      <tr><th>Board</th><th>Depth</th><th>Minimax</th><th>Alpha-Beta</th></tr>
+      <tr><td>3×3</td><td>9 (full)</td><td>549,946</td><td class="hi">18,297</td></tr>
+      <tr><td>4×4</td><td>5</td><td>571,457</td><td class="hi">9,968</td></tr>
+      <tr><td>5×5</td><td>4</td><td>318,026</td><td class="hi">7,578</td></tr>
+    </table>
+    <p class="note">Within the time limit, Alpha-Beta searched 3 plies deeper than Minimax on larger boards: depth 8 on 4×4 (1.3M nodes, 17.7 s) and depth 7 on 5×5 (4.8M nodes, 66 s).</p>
+  </section>
+</div>
+
+<!-- ================= COLUMN 2 ================= -->
+<div class="col">
+  <section class="tree">
+    <h2>Game Tree: Minimax</h2>
+    <img src="img/tree_minimax.svg" style="height:165px;max-width:100%" alt="Game Tree: Minimax">
+    <div class="capwrap"><div class="mini"><span class="X">X</span><span class="O">O</span><span class="X">X</span><span class="O">O</span><span class="e">5</span><span class="X">X</span><span class="e">7</span><span class="e">8</span><span class="O">O</span></div><div class="cap">Start position (X to move; empty squares numbered). All 16 nodes visited; root value 0 (draw). Edge labels = square played.</div></div>
+    <div class="legend"><span class="max">▲ MAX</span><span class="min">▼ MIN</span><span>■ terminal</span></div>
+  </section>
+
+  <section>
+    <h2>Minimax vs Alpha-Beta on the 3×3 Board</h2>
+    <table>
+      <tr><th>Board state</th><th>Algorithm</th><th>Nodes</th><th>Median time</th><th>Utility</th></tr>
+      <tr><td>Empty</td><td>Minimax</td><td>549,946</td><td>1,019.7 ms</td><td>0</td></tr>
+      <tr><td></td><td>Alpha-Beta</td><td class="hi">18,297</td><td class="hi">40.2 ms</td><td>0</td></tr>
+      <tr><td>Mid-game</td><td>Minimax</td><td>182</td><td>0.352 ms</td><td>+1</td></tr>
+      <tr><td></td><td>Alpha-Beta</td><td class="hi">97</td><td class="hi">0.220 ms</td><td>+1</td></tr>
+      <tr><td>Late game</td><td>Minimax</td><td>8</td><td>0.016 ms</td><td>+1</td></tr>
+      <tr><td></td><td>Alpha-Beta</td><td>8</td><td>0.017 ms</td><td>+1</td></tr>
+    </table>
+    <div class="big">
+      <div class="stat"><b>96.7%</b><span>fewer nodes (empty board)</span></div>
+      <div class="stat"><b>25×</b><span>faster (empty board)</span></div>
+      <div class="stat"><b>4,237</b><span>cutoffs, 6,930 moves skipped</span></div>
+    </div>
+  </section>
+
+  <section class="tree">
+    <h2>Game Tree: Alpha-Beta Pruning</h2>
+    <img src="img/tree_alphabeta.svg" style="height:165px;max-width:100%" alt="Game Tree: Alpha-Beta Pruning">
+    <div class="capwrap"><div class="mini"><span class="X">X</span><span class="O">O</span><span class="X">X</span><span class="O">O</span><span class="e">5</span><span class="X">X</span><span class="e">7</span><span class="e">8</span><span class="O">O</span></div><div class="cap">Same start position, same root value (0), with <b>12 nodes instead of 16</b>: <span class="prune">2 branches pruned</span> (red, dashed) because α ≥ β.</div></div>
+  </section>
+
+  <section class="tree">
+    <h2>Game Tree: Expectiminimax</h2>
+    <img src="img/tree_expectiminimax.svg" style="height:160px;max-width:100%" alt="Game Tree: Expectiminimax">
+    <div class="capwrap"><div class="mini"><span class="X">X</span><span class="O">O</span><span class="X">X</span><span class="O">O</span><span class="e">5</span><span class="X">X</span><span class="e">7</span><span class="e">8</span><span class="O">O</span></div><div class="cap">Same start position. MAX → <span class="chance">● chance node</span> → outcomes. A move lands as chosen with p = .90, else on another empty square (.05 each). Leaves show the exact value of the rest of the game.</div></div>
+  </section>
+</div>
+
+<!-- ================= COLUMN 3 ================= -->
+<div class="col">
+  <section>
+    <h2>Results: Search Effort and Win Rates</h2>
+    <div class="figs">
+      <figure><img src="../../results/figures/nodes_per_move.png" alt=""><figcaption>Nodes per move (log scale)</figcaption></figure>
+      <figure><img src="../../results/figures/time_per_move.png" alt=""><figcaption>Time per move (log scale)</figcaption></figure>
+      <figure><img src="../../results/figures/win_draw_loss_standard.png" alt=""><figcaption>Standard game</figcaption></figure>
+      <figure><img src="../../results/figures/win_draw_loss_stochastic.png" alt=""><figcaption>Stochastic game</figcaption></figure>
+    </div>
+    <ul>
+      <li>Minimax and Alpha-Beta each won 90 / 100 vs Random (10 draws, 0 losses); Minimax vs Alpha-Beta: 100 / 100 draws.</li>
+      <li>Per game, Alpha-Beta needed ~28× fewer nodes and ~25× less time than Minimax for identical results.</li>
+      <li>Stochastic game (50 games each): Expectiminimax beat Random 43 / 50, Minimax 14 / 50 (31 draws, 5 losses) and Alpha-Beta 16 / 50 (32 draws, 2 losses).</li>
+    </ul>
+  </section>
+
+  <section id="gemini">
+    <h2>Gemini LLM Agent Results</h2>
+    <p><b>Gemini 3 Flash</b> chooses a move from a JSON prompt (board, mark, legal squares). 20 games per opponent, alternating X/O. An illegal move forfeits the game.</p>
+    <table>
+      <tr><th>Opponent</th><th>Thinking</th><th>W / D / L</th><th>Forfeits</th></tr>
+      <tr><td>Random</td><td>minimal</td><td>12 / 0 / 8</td><td>4</td></tr>
+      <tr><td></td><td>low</td><td class="hi">20 / 0 / 0</td><td>0</td></tr>
+      <tr><td>Alpha-Beta</td><td>minimal</td><td>0 / 0 / 20</td><td>10</td></tr>
+      <tr><td></td><td>low</td><td class="hi">0 / 20 / 0</td><td>0</td></tr>
+      <tr><td>Expectiminimax<br><span class="note">(stochastic)</span></td><td>minimal</td><td>0 / 2 / 18</td><td>7</td></tr>
+      <tr><td></td><td>low</td><td class="hi">4 / 14 / 2</td><td>0</td></tr>
+    </table>
+    <p class="note">More thinking time removed every illegal move (21 forfeits → 0) at about 5 s per move instead of 1 s. Against perfect play (Alpha-Beta) Gemini held a draw in all 20 games.</p>
+  </section>
+
+  <section class="grow">
+    <h2>Key Findings</h2>
+    <ul>
+      <li><b>Pruning pays off where the tree is big.</b> Alpha-Beta matches Minimax's decisions with ~97% fewer nodes from the empty board, and gives little near the end of the game.</li>
+      <li><b>Nodes per move:</b> ~78,000 Minimax, ~2,800 Alpha-Beta, ~1,100 Expectiminimax (caches states).</li>
+      <li><b>Gemini plays well only with room to think.</b> With low thinking it never forfeited and matched Alpha-Beta's draw; with minimal thinking it lost all 20 games to it.</li>
+      <li><b>Chance changes the best play.</b> Expectiminimax, which models the 10% slip, outscored Minimax and Alpha-Beta in the stochastic game.</li>
+      <li><b>Scalability:</b> Minimax cost grows about ×20 per extra ply on 5×5. Alpha-Beta cuts it 71–98% at equal depth, which is what makes 4×4 and 5×5 searchable.</li>
+    </ul>
+  </section>
+</div>
+
+</div>
+
+<footer>Code, tests and benchmarks: README.txt · algorithms/ · agents/ · evaluation/ · results/ &nbsp;|&nbsp; Game-tree figures generated from the project's own search code (docs/poster/make_trees.py)</footer>
+</div>
+</body>
+</html>
